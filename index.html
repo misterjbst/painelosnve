@@ -1695,6 +1695,27 @@
   .rm-semos{color:var(--muted);}
   .rm-pino{width:22px;height:22px;border-radius:50%;border:2px solid #fff;color:#fff;font-size:10px;font-weight:800;display:grid;place-items:center;box-shadow:0 1px 4px rgba(0,0,0,.5);}
   .rm-links{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;}
+  /* v6.4: Clientes e telas */
+  #clientesOverlay{z-index:75; align-items:flex-start;}   /* abre por cima do Mapa de Telas */
+  #clientesOverlay .modal{height:auto;}
+  #cliNomes{min-height:130px; padding:10px 12px; font:inherit; font-size:14px; line-height:1.5;}
+  .cli-lista{display:flex;flex-direction:column;gap:10px;margin-bottom:12px;max-height:46vh;overflow-y:auto;}
+  .cli-grupo{border:1px solid var(--border);border-radius:var(--r-md);background:var(--panel-alt);padding:10px 12px;}
+  .cli-grupo-topo{display:flex;align-items:center;gap:8px;margin-bottom:6px;}
+  .cli-grupo-topo b{font-size:14px;flex:1;}
+  .cli-grupo-topo small{color:var(--muted);font-size:11.5px;}
+  .cli-local{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:8px;align-items:center;padding:6px 0;border-top:1px solid var(--border);font-size:13px;}
+  .cli-local .cli-onde{display:block;color:var(--muted);font-size:11.5px;}
+  .cli-local.inativo{opacity:.5;}
+  .cli-qtd{font-size:12px;color:var(--muted);white-space:nowrap;}
+  .cli-form{border:1px solid var(--brand-1);border-radius:var(--r-md);padding:12px;margin:10px 0;}
+  .cli-form h3{margin:0 0 10px;font-size:15px;}
+  .cli-ativo{display:flex;align-items:center;gap:8px;font-size:13px;margin:4px 0 8px;}
+  .cli-ativo input{width:auto;}
+  .cli-form-botoes{display:flex;justify-content:flex-end;gap:8px;}
+  #clientesOverlay{z-index:75; align-items:flex-start;}
+  #clientesOverlay .modal{height:auto;}
+  #cliNomes{min-height:130px; padding:10px 12px; font:inherit; font-size:14px; line-height:1.5;}
 </style>
 <style id="estiloPagina">@page{size:A4 landscape;margin:10mm;}</style>
 <script>
@@ -1750,6 +1771,7 @@
     <span id="syncInfo" class="subtitle mono" style="display:none;color:var(--teal);">sincronizando…</span>
     <div class="acoes-bar">
     <button class="btn" id="btnLock" onclick="handleLoginButton()">Sair</button>
+    <button class="btn" id="btnAvisos" onclick="alternarAvisos()" style="display:none;">🔔 Ativar avisos</button>
     <button class="btn" id="btnSheetExport" onclick="exportarPlanilhaFormatada()" style="display: inline-flex;">📗 Visualizar em Excel (Backup)</button>
     <button class="btn" id="btnReport" onclick="openReportFilter('os')" style="display: inline-flex;">Relatório de OS</button>
     <button class="btn" id="btnReportVist" onclick="openReportFilter('vist')" style="display: inline-flex;">Relatório de vistoria</button>
@@ -2105,6 +2127,7 @@
         <select id="mtMes" onchange="renderMapaTelas()" style="display:none;padding:8px 10px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--panel-alt);color:var(--text);font:inherit;font-size:12.5px;"></select>
         <button class="btn" onclick="abrirModoTVMapa()" title="Abrir o mapa no telão (link com #tvmapa no final)">📺 Modo TV</button>
         <button class="btn" id="btnMtEditar" onclick="mtAlternarEdicao()" style="display:none;">✏️ Nomear telas</button>
+        <button class="btn" id="btnMtClientes" onclick="openClientes()" style="display:none;">🏢 Clientes e telas</button>
       </div>
     </div>
 
@@ -2511,6 +2534,45 @@
     <div class="modal-actions">
       <button class="btn" onclick="closeTecnicos()">Cancelar</button>
       <button class="btn primary" onclick="tecSalvar()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="clientesOverlay">
+  <div class="modal cp-modal-form">
+    <h2>🏢 Clientes e telas</h2>
+    <p class="cp-sub">As lojas do Mapa de Telas. Cadastre quantas telas tem em cada loja e onde fica.</p>
+    <div id="cliLista" class="cli-lista"></div>
+    <button class="btn" id="cliBtnNovo" onclick="cliNovo('')">＋ Cadastrar cliente ou local</button>
+    <div id="cliForm" class="cli-form" style="display:none;">
+      <h3 id="cliFormTitulo">Novo local</h3>
+      <div class="row2">
+        <div class="field"><label for="cliGrupo">Cliente</label>
+          <input type="text" id="cliGrupo" list="cliListaGrupos" placeholder="Ex.: Coema, Body Tech" oninput="cliSugereTipo()"></div>
+        <div class="field"><label for="cliTipo">Tipo</label>
+          <input type="text" id="cliTipo" list="cliListaTipos" placeholder="Ex.: Supermercado, Academia"></div>
+      </div>
+      <div class="row2">
+        <div class="field"><label for="cliLocal">Local</label>
+          <input type="text" id="cliLocal" placeholder="Ex.: Torquato 02"></div>
+        <div class="field"><label for="cliQtd">Quantas telas</label>
+          <input type="number" id="cliQtd" min="1" max="60" value="1" oninput="cliAjustaNomes()"></div>
+      </div>
+      <div class="field"><label for="cliOnde">Localização</label>
+        <input type="text" id="cliOnde" placeholder="Endereço ou ponto de referência. Ex.: em frente à Bemol"></div>
+      <div class="field"><label for="cliNomes">Nome de cada tela (opcional, uma por linha)</label>
+        <textarea id="cliNomes" rows="4" placeholder="Ex.:&#10;Telão 3x2 — esquerda&#10;Telão 3x2 — direita&#10;Tela principal 6x2"></textarea></div>
+      <label class="cli-ativo"><input type="checkbox" id="cliAtivo" checked> Mostrar no Mapa de Telas e no app</label>
+      <div class="cp-erro" id="cliErro" role="alert"></div>
+      <div class="cli-form-botoes">
+        <button class="btn" onclick="cliFecharForm()">Cancelar</button>
+        <button class="btn primary" id="cliBtnSalvar" onclick="cliSalvar()">Salvar</button>
+      </div>
+    </div>
+    <datalist id="cliListaGrupos"></datalist>
+    <datalist id="cliListaTipos"></datalist>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeClientes()">Fechar</button>
     </div>
   </div>
 </div>
@@ -3032,7 +3094,7 @@ function acaoPadrao(){ return acaoAtiva('visita') ? 'visita' : (ACOES_ATIVAS ? A
 var REL_EMPRESA = EMPRESA.nome;
 var REL_ACOES_ATIVAS = ACOES_ATIVAS;
 
-const VERSAO_PAINEL = '6.0';
+const VERSAO_PAINEL = '6.1';
 const VERSAO_DATA = '21/10/2026';
 let buscaDigitada = false;   // v5.06: ver render()
 
@@ -3271,6 +3333,7 @@ async function loadData(){
       solicitacoes = d.solicitacoes || solicitacoes;
       destinatarios = normalizaDestinatarios(d.destinatarios);
       telasInfo = (d.telasInfo && typeof d.telasInfo === 'object') ? d.telasInfo : telasInfo;
+      if(Array.isArray(d.mapaLocais)){ mapaLocais = d.mapaLocais; aplicaMapaLocais(); }
       planejamento = normalizaPlanejamento(d.planejamento);
       equipeTecnicos = normalizaTecnicos(d.equipeTecnicos);
       rotaFixa = d.rotaFixa || rotaFixa;
@@ -3301,6 +3364,7 @@ async function loadData(){
     solicitacoes = (json && json.solicitacoes) || solicitacoes;
     destinatarios = normalizaDestinatarios(json && json.destinatarios);
     telasInfo = (json && json.telasInfo && typeof json.telasInfo === 'object') ? json.telasInfo : telasInfo;
+    if(json && Array.isArray(json.mapaLocais)){ mapaLocais = json.mapaLocais; aplicaMapaLocais(); }
     planejamento = normalizaPlanejamento(json && json.planejamento);
     equipeTecnicos = normalizaTecnicos(json && json.equipeTecnicos);
     rotaFixa = (json && json.rotaFixa) || rotaFixa;
@@ -3445,8 +3509,8 @@ function semFotosLocais(dados){
    ESTE aparelho alterou desde a última leitura.
    ============================================================ */
 let snapServidor = null;   // retrato dos dados na última leitura/gravação
-function estadoLocal(){ return { items, userSlots, cadastro, rotaPacheco, historicoRotas, solicitacoes, rotaFixa, destinatarios, telasInfo, planejamento, equipeTecnicos }; }
-const CHAVES_SIMPLES = ['cadastro','rotaPacheco','historicoRotas','rotaFixa','destinatarios','telasInfo','planejamento','equipeTecnicos'];
+function estadoLocal(){ return { items, userSlots, cadastro, rotaPacheco, historicoRotas, solicitacoes, rotaFixa, destinatarios, telasInfo, planejamento, equipeTecnicos, mapaLocais }; }
+const CHAVES_SIMPLES = ['cadastro','rotaPacheco','historicoRotas','rotaFixa','destinatarios','telasInfo','planejamento','equipeTecnicos','mapaLocais'];
 // fonte = o que foi lido ou ENVIADO ao servidor (não o que está na tela agora:
 // uma alteração feita durante o envio ainda não foi gravada e precisa seguir "alterada")
 function tiraRetrato(fonte){
@@ -3487,6 +3551,7 @@ async function mesclaComServidor(){
   rotaFixa = pega('rotaFixa') || rotaFixa;
   destinatarios = normalizaDestinatarios(pega('destinatarios'));
   const ti = pega('telasInfo'); telasInfo = (ti && typeof ti === 'object') ? ti : telasInfo;
+  const ml = pega('mapaLocais'); if(Array.isArray(ml)){ mapaLocais = ml; aplicaMapaLocais(); }
   planejamento = normalizaPlanejamento(pega('planejamento'));
   equipeTecnicos = normalizaTecnicos(pega('equipeTecnicos'));
   // vagas de login: junta as dos dois lados, ninguém perde a vaga
@@ -3695,6 +3760,7 @@ async function refreshFromServer(){
     solicitacoes = (json && json.solicitacoes) || solicitacoes;
     destinatarios = normalizaDestinatarios(json && json.destinatarios);
     telasInfo = (json && json.telasInfo && typeof json.telasInfo === 'object') ? json.telasInfo : telasInfo;
+    if(json && Array.isArray(json.mapaLocais)){ mapaLocais = json.mapaLocais; aplicaMapaLocais(); }
     planejamento = normalizaPlanejamento(json && json.planejamento);
     equipeTecnicos = normalizaTecnicos(json && json.equipeTecnicos);
     rotaFixa = (json && json.rotaFixa) || rotaFixa;
@@ -3891,6 +3957,7 @@ function confirmCode(){
 }
 
 function updateModeUI(){
+  try{ mostraBotaoAvisos(); }catch(e){}
   let label = 'nível 4 - observador (visualiza e solicita)';
   if(currentUser?.role === 'admin') label = 'programador (acesso total)';
   else if(currentUser?.role === 'manutencao') label = 'administrador (' + currentUser.name + ')';
@@ -7573,6 +7640,206 @@ function tecAtualizaColab(){
   const total = document.querySelectorAll('#fColabM .colab-chip').length;
   document.getElementById('fColabM').closest('.field').style.display = (algum && total > 1) ? '' : 'none';
 }
+let mapaLocaisLinhas = null;          // linhas do banco (inclui as escondidas)
+let cliEditandoId = null;
+function aplicarMapaDoBanco(linhas){
+  const ativos = (linhas || []).filter(l=>l.ativo !== false)
+    .sort((a, b)=>(a.ordem - b.ordem) || (a.id - b.id));
+  if(!ativos.length) return;
+  const grupos = [], pos = {};
+  ativos.forEach(l=>{
+    if(!(l.grupo in pos)){ pos[l.grupo] = grupos.length; grupos.push({ grupo: l.grupo, tipo: l.tipo || '', locais: [] }); }
+    grupos[pos[l.grupo]].locais.push({ nome: l.local, qtd: l.qtd || 1, localizacao: l.localizacao || '', id: l.id });
+  });
+  EMPRESA.telas = grupos;
+}
+function openClientes(){
+  if(!ehOperador()) return;
+  if(!mapaLocaisLinhas || !mapaLocaisLinhas.length) mapaLocaisLinhas = mapaDoCodigo();   // primeira vez: parte do mapa atual
+  cliFecharForm();
+  cliDesenhar();
+  document.getElementById('clientesOverlay').classList.add('show');
+}
+function closeClientes(){ document.getElementById('clientesOverlay').classList.remove('show'); }
+function cliDesenhar(){
+  const linhas = (mapaLocaisLinhas || []).slice().sort((a, b)=>(a.ordem - b.ordem) || (a.id - b.id));
+  const grupos = [], pos = {};
+  linhas.forEach(l=>{ if(!(l.grupo in pos)){ pos[l.grupo] = grupos.length; grupos.push({ grupo: l.grupo, tipo: l.tipo, locais: [] }); } grupos[pos[l.grupo]].locais.push(l); });
+  document.getElementById('cliLista').innerHTML = grupos.map(g=>{
+    const telas = g.locais.filter(l=>l.ativo !== false).reduce((s, l)=>s + (l.qtd || 0), 0);
+    return '<div class="cli-grupo"><div class="cli-grupo-topo"><b>' + escVist(g.grupo) + '</b>' +
+      '<small>' + escVist(g.tipo || '') + ' · ' + telas + (telas === 1 ? ' tela' : ' telas') + '</small>' +
+      '<button class="btn" onclick="cliNovo(' + escVist(JSON.stringify(g.grupo)) + ')">＋ Local</button></div>' +
+      g.locais.map(l=>'<div class="cli-local' + (l.ativo === false ? ' inativo' : '') + '"><div>' + escVist(l.local) +
+        (l.localizacao ? '<span class="cli-onde">📍 ' + escVist(l.localizacao) + '</span>' : '') +
+        (l.ativo === false ? '<span class="cli-onde">fora do mapa</span>' : '') + '</div>' +
+        '<span class="cli-qtd">' + l.qtd + (l.qtd === 1 ? ' tela' : ' telas') + '</span>' +
+        '<button class="btn" onclick="cliEditar(' + l.id + ')">Editar</button></div>').join('') +
+      '</div>';
+  }).join('');
+  const gruposUnicos = [...new Set(linhas.map(l=>l.grupo))];
+  const tipos = [...new Set(linhas.map(l=>l.tipo).filter(Boolean))];
+  document.getElementById('cliListaGrupos').innerHTML = gruposUnicos.map(g=>'<option value="' + escVist(g) + '">').join('');
+  document.getElementById('cliListaTipos').innerHTML = tipos.map(t=>'<option value="' + escVist(t) + '">').join('');
+}
+function cliAbrirForm(titulo){
+  document.getElementById('cliFormTitulo').textContent = titulo;
+  document.getElementById('cliErro').textContent = '';
+  document.getElementById('cliForm').style.display = 'block';
+  document.getElementById('cliBtnNovo').style.display = 'none';
+  document.getElementById('cliForm').scrollIntoView({ block: 'nearest' });
+}
+function cliFecharForm(){
+  cliEditandoId = null;
+  document.getElementById('cliForm').style.display = 'none';
+  document.getElementById('cliBtnNovo').style.display = '';
+}
+function cliNovo(grupo){
+  cliEditandoId = null;
+  document.getElementById('cliGrupo').value = grupo || '';
+  document.getElementById('cliTipo').value = '';
+  cliSugereTipo();
+  ['cliLocal', 'cliOnde', 'cliNomes'].forEach(id=>document.getElementById(id).value = '');
+  document.getElementById('cliQtd').value = 1;
+  document.getElementById('cliAtivo').checked = true;
+  cliAbrirForm(grupo ? 'Novo local de ' + grupo : 'Novo cliente ou local');
+  setTimeout(()=>document.getElementById(grupo ? 'cliLocal' : 'cliGrupo').focus(), 50);
+}
+function cliEditar(id){
+  const l = (mapaLocaisLinhas || []).find(x=>x.id === id);
+  if(!l) return;
+  cliEditandoId = id;
+  document.getElementById('cliGrupo').value = l.grupo;
+  document.getElementById('cliTipo').value = l.tipo || '';
+  document.getElementById('cliLocal').value = l.local;
+  document.getElementById('cliQtd').value = l.qtd || 1;
+  document.getElementById('cliOnde').value = l.localizacao || '';
+  document.getElementById('cliAtivo').checked = l.ativo !== false;
+  const nomes = [];
+  for(let i = 1; i <= (l.qtd || 1); i++) nomes.push(((telasInfo[mtCodigo(l.grupo, l.local, i)] || {}).nome) || '');
+  while(nomes.length && !nomes[nomes.length - 1]) nomes.pop();
+  document.getElementById('cliNomes').value = nomes.join('\n');
+  cliAbrirForm('Editar ' + l.local);
+}
+// cliente que já existe: o tipo vem preenchido
+function cliSugereTipo(){
+  const g = document.getElementById('cliGrupo').value.trim().toLowerCase();
+  const achou = (mapaLocaisLinhas || []).find(l=>l.grupo.toLowerCase() === g);
+  const tipo = document.getElementById('cliTipo');
+  if(achou && !tipo.value) tipo.value = achou.tipo || '';
+}
+function cliAjustaNomes(){ /* os nomes são opcionais: linhas a mais são ignoradas */ }
+async function cliSalvar(){
+  if(!ehOperador()) return;
+  const erro = document.getElementById('cliErro');
+  const v = id=>document.getElementById(id).value.trim();
+  let grupo = v('cliGrupo'), local = v('cliLocal');
+  const qtd = parseInt(v('cliQtd'), 10);
+  if(!grupo){ erro.textContent = 'Informe o cliente.'; return; }
+  if(!local){ erro.textContent = 'Informe o local.'; return; }
+  if(!(qtd >= 1 && qtd <= 60)){ erro.textContent = 'A quantidade de telas vai de 1 a 60.'; return; }
+  const linhas = mapaLocaisLinhas || [];
+  const existente = linhas.find(l=>l.grupo.toLowerCase() === grupo.toLowerCase());
+  if(existente) grupo = existente.grupo;
+  const repetido = linhas.find(l=>l.id !== cliEditandoId && l.grupo === grupo && l.local.toLowerCase() === local.toLowerCase());
+  if(repetido){ erro.textContent = 'Este local já está cadastrado em ' + grupo + '. Use Editar na lista.'; return; }
+  const dados = { grupo: grupo, tipo: v('cliTipo') || '', local: local, qtd: qtd, localizacao: v('cliOnde') || '',
+                  ativo: document.getElementById('cliAtivo').checked };
+  if(cliEditandoId){
+    const l = linhas.find(x=>x.id === cliEditandoId); Object.assign(l, dados);
+  } else {
+    const doGrupo = linhas.filter(l=>l.grupo === grupo);
+    const maiorGeral = Math.max(0, ...linhas.map(l=>l.ordem || 0));
+    dados.ordem = doGrupo.length ? Math.max(...doGrupo.map(l=>l.ordem || 0)) + 1 : (Math.floor(maiorGeral / 100) + 1) * 100;
+    dados.id = 'ml' + Date.now();
+    linhas.push(dados);
+  }
+  mapaLocais = linhas.map(l=>Object.assign({}, l));
+  const nomes = v('cliNomes').split('\n').map(x=>x.trim());
+  for(let i = 1; i <= qtd; i++){
+    const nome = nomes[i - 1]; if(!nome) continue;
+    const cod = mtCodigo(grupo, local, i);
+    if((telasInfo[cod] || {}).nome !== nome) telasInfo[cod] = Object.assign({}, telasInfo[cod] || {}, { nome: nome });
+  }
+  aplicarMapaDoBanco(mapaLocaisLinhas);
+  cliFecharForm(); cliDesenhar();
+  if(document.getElementById('mapaTelasPage').style.display === 'block') renderMapaTelas();
+  render();
+  const ok = await persist();
+  if(ok === false) erro.textContent = 'Salvo neste aparelho; não foi possível confirmar no servidor. Repita com boa conexão.';
+}
+
+/* Nova Era: a lista começa a partir do mapa que já está no código */
+const MAPA_DO_CODIGO = JSON.parse(JSON.stringify(EMPRESA.telas));
+function mapaDoCodigo(){
+  const linhas = [];
+  MAPA_DO_CODIGO.forEach((g, gi)=>g.locais.forEach((l, li)=>linhas.push({ id: 'ml' + gi + '-' + li, grupo: g.grupo, tipo: g.tipo || '',
+    local: l.nome, qtd: l.qtd || 1, localizacao: l.localizacao || '', ordem: gi * 100 + li, ativo: true })));
+  return linhas;
+}
+let mapaLocais = null;   // guardado no JSON do painel; null = usa o mapa do código
+function aplicaMapaLocais(){
+  if(Array.isArray(mapaLocais) && mapaLocais.length){ mapaLocaisLinhas = mapaLocais.map(l=>Object.assign({}, l)); aplicarMapaDoBanco(mapaLocaisLinhas); }
+}
+
+/* ================================================================
+   v6.1 — AVISO NO CELULAR A CADA OS ABERTA (só o perfil Técnico)
+   Firebase próprio do Nova Era (painel-nve); quem envia é o Apps Script do Nova Era.
+   ================================================================ */
+const AV_FIREBASE = { apiKey:'AIzaSyCoN8_V-HTyjO4eXHo3p5OC9q7BDmKH6OA', authDomain:'painel-nve.firebaseapp.com', projectId:'painel-nve',
+  storageBucket:'painel-nve.firebasestorage.app', messagingSenderId:'1087550876085', appId:'1:1087550876085:web:e5c5bad58cee6ad6e691fc' };
+const AV_CHAVE_WEB = 'BHDIprPjq_T4Ln4rzmVqjNPoNs82915F3GhmpTkAXMQrJ61SwAEqA0QdN0zNKrWnS0yc0zGwRzK57J5spdMXVGk';
+const AV_TOKEN_KEY = 'ne_avisos_token';
+function avSuportado(){ return ('serviceWorker' in navigator) && ('PushManager' in window) && ('Notification' in window); }
+function avAtivos(){ try{ return avSuportado() && Notification.permission === 'granted' && !!localStorage.getItem(AV_TOKEN_KEY); }catch(e){ return false; } }
+function mostraBotaoAvisos(){
+  const b = document.getElementById('btnAvisos'); if(!b) return;
+  b.style.display = ehAdmin() ? 'inline-flex' : 'none';   // no Nova Era, o perfil Técnico é o de acesso total
+  b.textContent = avAtivos() ? '🔕 Desativar avisos' : '🔔 Ativar avisos';
+  b.title = avAtivos() ? 'os avisos estão ligados neste aparelho; toque para desligar' : 'receber neste celular um aviso a cada OS aberta';
+}
+function avCarrega(src){ return new Promise((ok, falha)=>{ if(document.querySelector('script[src="' + src + '"]')) return ok();
+  const s = document.createElement('script'); s.src = src; s.onload = ok; s.onerror = ()=>falha(new Error('sem internet')); document.head.appendChild(s); }); }
+async function avMensageiro(){
+  await avCarrega('https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js');
+  await avCarrega('https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging-compat.js');
+  if(!firebase.apps.length) firebase.initializeApp(AV_FIREBASE);
+  return firebase.messaging();
+}
+async function avPost(corpo){
+  const r = await fetch(GAS_URL, { method:'POST', headers:{ 'Content-Type':'text/plain;charset=utf-8' }, body: JSON.stringify(corpo) });
+  return r.json();
+}
+function alternarAvisos(){ return avAtivos() ? desativarAvisos() : ativarAvisos(); }
+async function ativarAvisos(){
+  if(!ehAdmin()) return;
+  if(!avSuportado()){
+    askConfirm('Este aparelho não recebe avisos do jeito em que o painel está aberto.\n\nNo iPhone: abra o painel no Safari, toque em Compartilhar → "Adicionar à Tela de Início" e abra pelo ícone. Depois toque de novo em "Ativar avisos".', ()=>{});
+    return;
+  }
+  try{
+    if(await Notification.requestPermission() !== 'granted'){ askConfirm('Os avisos ficaram bloqueados neste aparelho. Libere as notificações deste site nas configurações e tente de novo.', ()=>{}); return; }
+    const reg = await navigator.serviceWorker.register('firebase-messaging-sw.js');
+    const m = await avMensageiro();
+    const token = await m.getToken({ vapidKey: AV_CHAVE_WEB, serviceWorkerRegistration: reg });
+    if(!token) throw new Error('o Firebase não devolveu o registro do aparelho');
+    const d = await avPost({ action:'avisoRegistrar', token: token, nome: currentUser ? currentUser.name : '', link: location.origin + location.pathname });
+    if(!d || !d.ok) throw new Error((d && d.error) || 'a planilha não confirmou');
+    try{ localStorage.setItem(AV_TOKEN_KEY, token); }catch(e){}
+    mostraBotaoAvisos();
+    askConfirm('Avisos ativados neste aparelho. Você vai receber um aviso a cada OS aberta, mesmo com o painel fechado.', ()=>{});
+  }catch(e){ askConfirm('Não foi possível ativar os avisos agora: ' + e.message, ()=>{}); }
+}
+function desativarAvisos(){
+  askConfirm('Desativar os avisos neste aparelho? Você deixa de receber o aviso de OS nova aqui.', async ()=>{
+    let token = ''; try{ token = localStorage.getItem(AV_TOKEN_KEY) || ''; }catch(e){}
+    try{ const m = await avMensageiro(); await m.deleteToken(); }catch(e){}
+    try{ if(token) await avPost({ action:'avisoRemover', token: token }); }catch(e){}
+    try{ localStorage.removeItem(AV_TOKEN_KEY); }catch(e){}
+    mostraBotaoAvisos();
+  });
+}
+
 let tecRascunho = [];
 function openTecnicos(){
   if(!ehAdmin()) return;
@@ -8785,6 +9052,8 @@ function mtFiltrar(f){ mtFiltro = f; renderMapaTelas(); }
 function openMapaTelas(){
   const b = document.getElementById('btnMtEditar');
   if(b) b.style.display = ehAdmin() ? 'inline-flex' : 'none';
+  const bc = document.getElementById('btnMtClientes');
+  if(bc) bc.style.display = ehOperador() ? 'inline-flex' : 'none';   // v6.1: cadastro das lojas e telas
   renderMapaTelas();
   document.getElementById('mapaTelasPage').style.display = 'block';
   mostrarVoltar(closeMapaTelas);
